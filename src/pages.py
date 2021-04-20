@@ -16,6 +16,20 @@ LOSS = [
     "mean_squared_logarithmic_error",
 ]
 
+def validate_percentage(number):
+    try:
+        number = float(number)
+        return number >= 0 and number <= 100
+    except ValueError:
+        return False
+
+def is_positive_number(number):
+    try:
+        number = int(number)
+        return number > 0
+    except ValueError:
+        return False
+
 class StartPage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
@@ -65,11 +79,13 @@ class ConfigurationPage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
 
+        self.alert = "Alerta"
+
         welcome_label = tk.Label(self, text ="Configurações Customizadas", font = ("Verdana", 14, "bold"))
         welcome_label.pack(pady=10)
 
-        container_buttons = tk.Frame(self, relief=tk.RAISED, borderwidth=1)
-        container_buttons.pack(fill=tk.BOTH, side=tk.BOTTOM)
+        container_bottom = tk.Frame(self, relief=tk.RAISED, borderwidth=1)
+        container_bottom.pack(fill=tk.BOTH, side=tk.BOTTOM)
 
         container1 = tk.Frame(self, relief=tk.RAISED, borderwidth=1)
         container1.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
@@ -111,7 +127,7 @@ class ConfigurationPage(tk.Frame):
         batch_entry.pack(side=tk.LEFT)
 
         back_button = tk.Button(
-            container_buttons,
+            container_bottom,
             text = "Voltar",
             font = ("Verdana", 14),
             height=2,
@@ -121,14 +137,24 @@ class ConfigurationPage(tk.Frame):
         back_button.pack(side=tk.LEFT)
 
         next_button = tk.Button(
-            container_buttons,
+            container_bottom,
             text = "Avançar",
             font = ("Verdana", 14),
             height = 2,
             width = 20,
-            command = lambda : controller.show_frame(CryptocurrencyChoicePage)
+            command = lambda : self.verify_values(days_entry.get(), epochs_entry.get(), batch_entry.get(), controller)
         )
         next_button.pack(side=tk.RIGHT)
+
+        self.alert_label = tk.Label(container_bottom, text = self.alert, font = ("Verdana", 14))
+        self.alert_label.pack()
+
+    def verify_values(self, days, epochs, batch, controller):
+        if (not is_positive_number(days)) or (not is_positive_number(epochs)) or (not is_positive_number(batch)):
+            self.alert_label["text"] = "Deve ser um numero maior que 0"
+            return
+        
+        controller.show_frame(CryptocurrencyChoicePage)
 
 
 class CryptocurrencyChoicePage(tk.Frame):
