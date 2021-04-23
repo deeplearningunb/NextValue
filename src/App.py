@@ -5,7 +5,9 @@ from pages import (
     StartPage,
     ConfigurationPage,
     TrainingPage,
-    ResultPage
+    ResultPage,
+    ChooseDatePage,
+    ChooseIntervalPage,
 )
 from Layer import Layer
 import pandas as pd
@@ -59,12 +61,12 @@ class App(tk.Tk):
         container.grid_columnconfigure(0, weight = 1)
 
         self.frames = {}
-        for F in (StartPage, ConfigurationPage, TrainingPage, ResultPage):
+        for F in (StartPage, ConfigurationPage, TrainingPage, ResultPage, ChooseDatePage, ChooseIntervalPage):
             frame = F(container, self)
             self.frames[F] = frame
             frame.grid(row = 0, column = 0, sticky ="nsew")
 
-        self.show_frame(TrainingPage)
+        self.show_frame(StartPage)
 
     def show_frame(self, c):
         frame = self.frames[c]

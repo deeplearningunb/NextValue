@@ -1,0 +1,6 @@
+tkcalendar
+numpy
+pandas
+matplotlib
+sklearn
+tensorflow
