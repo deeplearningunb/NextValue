@@ -1,33 +1,30 @@
 import tkinter as tk
 from os import listdir
 from os.path import isfile, join
-from pages import (
-    StartPage,
-    ConfigurationPage,
-    TrainingPage,
-    ResultPage,
-    ChooseDatePage,
-    ChooseIntervalPage,
+from pages.StartPage import StartPage
+from pages.ConfigurationPage import ConfigurationPage
+from pages.TrainingPage import TrainingPage
+from pages.ResultPage import ResultPage
+from pages.ChooseDatePage import ChooseDatePage
+from pages.ChooseIntervalPage import ChooseIntervalPage
+from Layer import (
+    Layer,
+    DEFAULT_DAYS,
+    DEFAULT_OPTIMIZER,
+    DEFAULT_LOSS,
+    DEFAULT_EPOCHS,
+    DEFAULT_BATCH_SIZE,
+    DEFAULT_LAYERS
 )
-from Layer import Layer
 import pandas as pd
 import numpy as np
 import math
+import page_list
 from sklearn.preprocessing import MinMaxScaler
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM
 from keras.layers import Dropout
-
-DEFAULT_DAYS = 5
-DEFAULT_OPTIMIZER = "adam"
-DEFAULT_LOSS = "mean_squared_error"
-DEFAULT_EPOCHS = 300
-DEFAULT_BATCH_SIZE = 96
-
-LAYERS = [
-    Layer(units=300, dropout=0.2)
-]
 
 DATA_PATH = "../Prices"
 
@@ -41,7 +38,7 @@ class App(tk.Tk):
             "loss": tk.StringVar(),
             "epochs": tk.StringVar(),
             "batch": tk.StringVar(),
-            "layers": LAYERS,
+            "layers": DEFAULT_LAYERS,
             "cryptocurrency": "Bitcoin",
             "cryptocurrency_list": [f for f in listdir(DATA_PATH) if (isfile(join(DATA_PATH, f)) and f.endswith(".csv"))],
         }
@@ -66,10 +63,24 @@ class App(tk.Tk):
             self.frames[F] = frame
             frame.grid(row = 0, column = 0, sticky ="nsew")
 
-        self.show_frame(StartPage)
+        self.show_frame(page_list.CONFIGURATION_PAGE)
 
     def show_frame(self, c):
-        frame = self.frames[c]
+        if c == page_list.START_PAGE:
+            frame = self.frames[StartPage]
+        elif c == page_list.CONFIGURATION_PAGE:
+            frame = self.frames[ConfigurationPage]
+        elif c == page_list.TRAINING_PAGE:
+            frame = self.frames[TrainingPage]
+        elif c == page_list.RESULT_PAGE:
+            frame = self.frames[ResultPage]
+        elif c == page_list.CHOOSE_DATE_PAGE:
+            frame = self.frames[ChooseDatePage]
+        elif c == page_list.CHOOSE_INTERVAL_PAGE:
+            frame = self.frames[ChooseIntervalPage]
+        else:
+            return
+
         frame.tkraise()
 
     def process_data(self, cryptocurrency_list):
@@ -128,7 +139,7 @@ class App(tk.Tk):
             units = first_layer.units
             dropout = first_layer.dropout
 
-            regressor.add(LSTM(units = units, return_sequences = True, input_shape = (self.dataset.shape[1], self.NUMBER_OF_CRYPTOCURRENCIES)))
+            regressor.add(LSTM(units = units, return_sequences = True, input_shape = (self.X_train.shape[1], self.NUMBER_OF_CRYPTOCURRENCIES)))
 
             if dropout > 0:
                 regressor.add(Dropout(dropout))

@@ -1,0 +1,6 @@
+START_PAGE = "StartPage"
+CONFIGURATION_PAGE = "ConfigurationPage"
+TRAINING_PAGE = "TrainingPage"
+RESULT_PAGE = "ResultPage"
+CHOOSE_DATE_PAGE = "ChooseDatePage"
+CHOOSE_INTERVAL_PAGE = "ChooseIntervalPage"
