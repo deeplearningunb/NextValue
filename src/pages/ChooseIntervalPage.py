@@ -2,6 +2,8 @@ import tkinter as tk
 import page_list
 from tkcalendar import Calendar
 from datetime import date
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 class ChooseIntervalPage(tk.Frame):
     def __init__(self, parent, controller):
@@ -33,20 +35,20 @@ class ChooseIntervalPage(tk.Frame):
         calendar_end = tk.Frame(calendar_area)
         calendar_end.grid(row=1, column=1, padx=20)
 
-        cal_start = Calendar(calendar_start, selectmode = 'day', mindate = date.today(), textvariable = self.selected_day_start)
-        cal_start.selection_set(date.today())
-        cal_start.pack()
+        self.cal_start = Calendar(calendar_start, selectmode = 'day', mindate = date.today(), textvariable = self.selected_day_start, date_pattern="yyyy-mm-dd")
+        self.cal_start.selection_set(date.today())
+        self.cal_start.pack()
 
-        cal_end = Calendar(calendar_end, selectmode = 'day', mindate = date.today(), textvariable = self.selected_day_end)
-        cal_end.selection_set(date.today())
-        cal_end.pack()
+        self.cal_end = Calendar(calendar_end, selectmode = 'day', mindate = date.today(), textvariable = self.selected_day_end, date_pattern="yyyy-mm-dd")
+        self.cal_end.selection_set(date.today())
+        self.cal_end.pack()
 
         cryptocurrency_menu = tk.OptionMenu(self, self.cryptocurrency, *cryptocurrency_list)
         cryptocurrency_menu.config(font = ("Verdana", 16))
         cryptocurrency_menu.pack(pady=20)
 
-        container_plot = tk.Frame(self, relief=tk.RAISED, height=350)
-        container_plot.pack()
+        self.container_plot = tk.Frame(self, relief=tk.RAISED, height=350)
+        self.container_plot.pack()
 
         button_area = tk.Frame(self)
         button_area.pack()
@@ -90,6 +92,8 @@ class ChooseIntervalPage(tk.Frame):
             command = lambda : self.save_image()
         )
         save_image_button.grid(row=0, column=3, padx=10, pady=10)
+
+        self.selected_day_start.trace("w", self.update_calendar)
     
     def predict(self):
         cryptocurrency = self.cryptocurrency.get()
@@ -100,10 +104,39 @@ class ChooseIntervalPage(tk.Frame):
         selected_day_start = self.selected_day_start.get()
         selected_day_end = self.selected_day_end.get()
 
-        # predict
+        predicted_values = [
+            12345.67,
+            12355.67,
+            12360.67,
+            12345.67,
+            12353.67,
+        ]
 
-    def save_table():
+        predict_dates = [
+            "2021-04-30",
+            "2021-05-01",
+            "2021-05-02",
+            "2021-05-03",
+            "2021-05-04",
+        ]
+
+        for child in self.container_plot.winfo_children():
+            child.destroy()
+        
+        fig = Figure(figsize=(7,3.5))
+        a = fig.add_subplot(111)
+        a.plot(predict_dates, predicted_values, color = 'blue', label = 'Predicted ' + cryptocurrency + ' Price')
+        a.set_title(cryptocurrency + ' Price Prediction')
+        a.set_ylabel(cryptocurrency + ' Price', fontsize=14)
+        canvas = FigureCanvasTkAgg(fig, master=self.container_plot)
+        canvas.get_tk_widget().pack()
+        canvas.draw()
+
+    def save_table(self):
         pass
 
-    def save_image():
+    def save_image(self):
         pass
+    
+    def update_calendar(self, *args):
+        self.cal_end["mindate"] = date.fromisoformat(self.selected_day_start.get())

@@ -63,7 +63,7 @@ class App(tk.Tk):
             self.frames[F] = frame
             frame.grid(row = 0, column = 0, sticky ="nsew")
 
-        self.show_frame(page_list.CONFIGURATION_PAGE)
+        self.show_frame(page_list.START_PAGE)
 
     def show_frame(self, c):
         if c == page_list.START_PAGE:
@@ -95,7 +95,9 @@ class App(tk.Tk):
             file = pd.read_csv(DATA_PATH + "/" + cryptocurrency_list[i])
             file = file.iloc[:, 1:3]
             self.dataset = pd.merge(self.dataset, file, on='Date', how='outer')
-        
+
+        self.most_recent_date = self.dataset.iloc[self.dataset.shape[0]-1, 0]
+
         self.dataset = self.dataset.iloc[:, 2:self.NUMBER_OF_CRYPTOCURRENCIES+2]
         self.dataset = self.dataset.replace(np.nan, 0)
 
