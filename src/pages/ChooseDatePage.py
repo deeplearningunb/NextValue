@@ -7,6 +7,8 @@ class ChooseDatePage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
 
+        self.controller = controller
+
         cryptocurrency_list = [c[:-4] for c in controller.shared_data["cryptocurrency_list"]]
         cryptocurrency_list.sort()
 
@@ -20,7 +22,7 @@ class ChooseDatePage(tk.Frame):
         self.selected_day.trace("w", self.show_predict)
         self.cryptocurrency.trace("w", self.show_predict)
 
-        cal = Calendar(self, selectmode = 'day', mindate = date.today(), textvariable = self.selected_day)
+        cal = Calendar(self, selectmode = 'day', mindate = date.today(), textvariable = self.selected_day, date_pattern="yyyy-mm-dd")
         cal.selection_set(date.today())
         cal.pack()
 
@@ -49,8 +51,6 @@ class ChooseDatePage(tk.Frame):
 
         selected_day = self.selected_day.get()
 
-        # predict
-
-        value = 12345.678999
+        value = self.controller.predict(cryptocurrency, selected_day)
 
         self.value["text"] = "US$: {:.2f}".format(value)

@@ -1,13 +1,19 @@
 import tkinter as tk
+from tkinter import filedialog
 import page_list
 from tkcalendar import Calendar
 from datetime import date
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import datetime
+import matplotlib.pyplot as plt
+import pandas as pd
 
 class ChooseIntervalPage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
+
+        self.controller = controller
 
         cryptocurrency_list = [c[:-4] for c in controller.shared_data["cryptocurrency_list"]]
         cryptocurrency_list.sort()
@@ -73,29 +79,34 @@ class ChooseIntervalPage(tk.Frame):
         )
         predict_button.grid(row=0, column=1, padx=10, pady=10)
 
-        save_table_button = tk.Button(
+        self.save_table_button = tk.Button(
             button_area,
             text = "Salvar\n(Tabela)",
             font = ("Verdana", 14),
             height = 2,
             width = 20,
+            state = tk.DISABLED,
             command = lambda : self.save_table()
         )
-        save_table_button.grid(row=0, column=2, padx=10, pady=10)
+        self.save_table_button.grid(row=0, column=2, padx=10, pady=10)
 
-        save_image_button = tk.Button(
+        self.save_image_button = tk.Button(
             button_area,
             text = "Salvar\n(Gráfico)",
             font = ("Verdana", 14),
             height = 2,
             width = 20,
+            state = tk.DISABLED,
             command = lambda : self.save_image()
         )
-        save_image_button.grid(row=0, column=3, padx=10, pady=10)
+        self.save_image_button.grid(row=0, column=3, padx=10, pady=10)
 
         self.selected_day_start.trace("w", self.update_calendar)
     
     def predict(self):
+        self.save_table_button["state"] = tk.DISABLED
+        self.save_image_button["state"] = tk.DISABLED
+
         cryptocurrency = self.cryptocurrency.get()
 
         if cryptocurrency == "Selecione a criptomoeda":
@@ -104,39 +115,66 @@ class ChooseIntervalPage(tk.Frame):
         selected_day_start = self.selected_day_start.get()
         selected_day_end = self.selected_day_end.get()
 
-        predicted_values = [
-            12345.67,
-            12355.67,
-            12360.67,
-            12345.67,
-            12353.67,
-        ]
+        self.predicted_values = self.controller.predict(cryptocurrency, selected_day_start, selected_day_end)
+        
+        self.predict_dates = []
 
-        predict_dates = [
-            "2021-04-30",
-            "2021-05-01",
-            "2021-05-02",
-            "2021-05-03",
-            "2021-05-04",
-        ]
+        selected_day_start = datetime.date.fromisoformat(selected_day_start)
+        selected_day_end = datetime.date.fromisoformat(selected_day_end)
+
+        delta = datetime.timedelta(days=1)
+
+        while selected_day_start <= selected_day_end:
+            self.predict_dates.append(selected_day_start.strftime('%d/%m'))
+            selected_day_start += delta
 
         for child in self.container_plot.winfo_children():
             child.destroy()
         
         fig = Figure(figsize=(7,3.5))
         a = fig.add_subplot(111)
-        a.plot(predict_dates, predicted_values, color = 'blue', label = 'Predicted ' + cryptocurrency + ' Price')
+        a.plot(self.predict_dates, self.predicted_values, color = 'blue', label = 'Predicted ' + cryptocurrency + ' Price')
+        a.xaxis.set_major_locator(plt.MaxNLocator(min(10, len(self.predict_dates))))
         a.set_title(cryptocurrency + ' Price Prediction')
         a.set_ylabel(cryptocurrency + ' Price', fontsize=14)
         canvas = FigureCanvasTkAgg(fig, master=self.container_plot)
         canvas.get_tk_widget().pack()
         canvas.draw()
 
+        self.image = fig
+
+        self.save_table_button["state"] = tk.NORMAL
+        self.save_image_button["state"] = tk.NORMAL
+
     def save_table(self):
-        pass
+        path = filedialog.asksaveasfilename(initialdir = "/",title = "Selecione o Local para Salvar",filetypes = [("CSV files","*.csv")])
+        
+        if isinstance(path, tuple) or path == '':
+            return
+        
+        dataframe = {
+            "Date": self.predict_dates,
+            "Closing Price (USD)": self.predicted_values
+        }
+
+        dataframe = pd.DataFrame(dataframe, columns= ['Date', 'Closing Price (USD)'])
+
+        dataframe.to_csv(path, index = False, header=True)
 
     def save_image(self):
-        pass
+        path = filedialog.asksaveasfilename(initialdir = "/",title = "Selecione o Local para Salvar",filetypes = [("PNG files","*.png")])
+        
+        if isinstance(path, tuple) or path == '':
+            return
+        
+        self.image.savefig(path)
     
     def update_calendar(self, *args):
-        self.cal_end["mindate"] = date.fromisoformat(self.selected_day_start.get())
+        selected_day_start = datetime.date.fromisoformat(self.selected_day_start.get())
+        selected_day_end = datetime.date.fromisoformat(self.selected_day_end.get())
+        delta = datetime.timedelta(days=1)
+
+        if selected_day_end < selected_day_start:
+            self.cal_end.selection_set(selected_day_start+delta)
+        
+        self.cal_end["mindate"] = selected_day_start+delta

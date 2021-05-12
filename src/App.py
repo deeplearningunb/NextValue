@@ -25,6 +25,7 @@ from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM
 from keras.layers import Dropout
+import datetime
 
 DATA_PATH = "../Prices"
 
@@ -49,6 +50,7 @@ class App(tk.Tk):
         self.shared_data["batch"].set(DEFAULT_BATCH_SIZE)
 
         self.NUMBER_OF_CRYPTOCURRENCIES = len(self.shared_data["cryptocurrency_list"])
+        self.shared_data["cryptocurrency_list"].sort()
 
         self.process_data(self.shared_data["cryptocurrency_list"])
 
@@ -82,11 +84,18 @@ class App(tk.Tk):
             return
 
         frame.tkraise()
+    
+    def generate_initial_values(self):
+        initial_values = {}
+
+        for i in range(self.dataset.shape[0]):
+            initial_values[self.dataset.iloc[i, 0]] = self.dataset.iloc[i, 2:].values
+
+        return initial_values
 
     def process_data(self, cryptocurrency_list):
         cryptocurrency_list.sort()
         TRAINING_RATE = 0.95
-        self.PREVIOUS_DAYS = int(self.shared_data["days"].get())
         
         self.dataset = pd.read_csv(DATA_PATH + "/Bitcoin.csv")
         self.dataset = self.dataset.iloc[:, 1:3]
@@ -96,19 +105,25 @@ class App(tk.Tk):
             file = file.iloc[:, 1:3]
             self.dataset = pd.merge(self.dataset, file, on='Date', how='outer')
 
-        self.most_recent_date = self.dataset.iloc[self.dataset.shape[0]-1, 0]
+        self.dataset = self.dataset.replace(np.nan, 0)
+
+        self.initial_values = self.generate_initial_values()
 
         self.dataset = self.dataset.iloc[:, 2:self.NUMBER_OF_CRYPTOCURRENCIES+2]
-        self.dataset = self.dataset.replace(np.nan, 0)
 
         NUMBER_OF_ROWS = self.dataset.shape[0]
         self.TRAINING_SET_SIZE = math.ceil(NUMBER_OF_ROWS*TRAINING_RATE)
         self.TEST_SET_SIZE = NUMBER_OF_ROWS - self.TRAINING_SET_SIZE
 
-        training_set = self.dataset.iloc[:self.TRAINING_SET_SIZE, : ].values
         self.test_set = self.dataset.iloc[self.TRAINING_SET_SIZE:, : ].values
 
         self.sc = MinMaxScaler(feature_range = (0, 1))
+
+    def build_rnn(self):
+        self.PREVIOUS_DAYS = int(self.shared_data["days"].get())
+        self.values = self.initial_values.copy()
+
+        training_set = self.dataset.iloc[:self.TRAINING_SET_SIZE, : ].values
         training_set_scaled = self.sc.fit_transform(training_set)
 
         self.X_train = []
@@ -121,7 +136,6 @@ class App(tk.Tk):
 
         self.X_train = self.X_train.reshape((self.X_train.shape[0], self.X_train.shape[1], self.NUMBER_OF_CRYPTOCURRENCIES))
 
-    def build_rnn(self):
         layer_list = self.shared_data["layers"]
         NUMBER_OF_LAYERS = len(layer_list)
 
@@ -186,3 +200,52 @@ class App(tk.Tk):
         predict = self.sc.inverse_transform(predict)
 
         return predict
+    
+    def predict_day(self, date):
+        if date in self.values:
+            return self.values[date]
+        
+        delta = datetime.timedelta(days=self.PREVIOUS_DAYS)
+        end_date = datetime.date.fromisoformat(date)
+        start_date = end_date - delta
+        delta = datetime.timedelta(days=1)
+
+        values = []
+        while start_date < end_date:
+            d = start_date.strftime('%Y-%m-%d')
+            inputs = self.predict_day(d)
+            inputs = inputs.reshape(1, -1)
+            inputs = self.sc.transform(inputs)
+            values.append(inputs)
+            start_date += delta
+        
+        values = [values]
+        values = np.array(values)
+        values = np.reshape(values, (values.shape[0], values.shape[1], self.NUMBER_OF_CRYPTOCURRENCIES))
+
+        predict = self.rnn.predict(values)
+        predict = self.sc.inverse_transform(predict)
+
+        self.values[date] = predict[0]
+        return predict[0]
+
+    def predict(self, cryptocurrency, date, end=None):
+        cryptocurrency_list = [c[:-4] for c in self.shared_data["cryptocurrency_list"]]
+        cryptocurrency_index = cryptocurrency_list.index(cryptocurrency)
+
+        if end == None:
+            predict = self.predict_day(date)
+            return predict[cryptocurrency_index]
+        else:
+            start_date = datetime.date.fromisoformat(date)
+            end_date = datetime.date.fromisoformat(end)
+            delta = datetime.timedelta(days=1)
+            predict_list = []
+
+            while start_date <= end_date:
+                d = start_date.strftime('%Y-%m-%d')
+                predict = self.predict_day(d)
+                predict_list.append(predict[cryptocurrency_index])
+                start_date += delta
+
+            return predict_list

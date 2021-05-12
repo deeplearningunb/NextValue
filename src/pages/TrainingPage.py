@@ -8,7 +8,6 @@ class TrainingPage(tk.Frame):
         tk.Frame.__init__(self, parent)
 
         self.cryptocurrency_list = [c[:-4] for c in controller.shared_data["cryptocurrency_list"]]
-        self.cryptocurrency_list.sort()
 
         self.test_set_size = controller.TEST_SET_SIZE
         self.test_set = controller.test_set
