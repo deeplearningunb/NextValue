@@ -26,7 +26,7 @@ def is_positive_number(number):
         return False
 
 def get_formated(pos, units, dropout):
-    return "{:d}. Units: {:d}    Dropout: {:.1f}%".format(pos, units, dropout)
+    return "{:d}. Units: {:d}    Dropout: {:.0f}%".format(pos, units, dropout)
 
 class ConfigurationPage(tk.Frame):
     def __init__(self, parent, controller):
@@ -100,12 +100,11 @@ class ConfigurationPage(tk.Frame):
 
         dropout_label = tk.Label(container2_button_left_row2, text ="Dropout: ", font = ("Verdana", 15, "bold"))
         dropout_label.pack(side=tk.LEFT)
-        dropout_value_label = tk.Label(container2_button_left_row2, text ="0.0%", font = ("Verdana", 15, "bold"), width=6)
+        dropout_value_label = tk.Label(container2_button_left_row2, text ="0%", font = ("Verdana", 15, "bold"), width=6)
         dropout_value_label.pack(side=tk.LEFT)
         dropout_scale = tk.Scale(
             container2_button_left_row2,
             orient=tk.HORIZONTAL,
-            resolution=0.5,
             length=255,
             showvalue=0,
             to=99,
